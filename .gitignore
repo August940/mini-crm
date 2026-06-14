@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# lokal fil-fallback (genereres fra seed-data, skal ikke i git)
+/.data
+
 # next.js
 /.next/
 /out/
