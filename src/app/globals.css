@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
+/*
+  Lyst, roligt "SaaS"-tema. Vi holder os bevidst til ét lyst tema, så
+  screenshots til portfolioen ser ens ud hver gang (ingen dark-mode-overraskelser).
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f7f9; /* sart grå sidebaggrund */
+  --foreground: #0f172a; /* slate-900 til tekst */
 }
 
 @theme inline {
@@ -12,15 +16,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Skjul scrollbar-æstetik på kanban-board uden at fjerne scroll-funktionen. */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
