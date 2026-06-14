@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -13,6 +13,17 @@ import { Lead, Stage, STAGES } from "@/lib/types";
 import { moveStageAction } from "@/app/leads/actions";
 import { StageColumn } from "./StageColumn";
 
+// Returnerer false ved server-render + første klient-render, og true derefter.
+// SSR-sikkert (ingen effect/setState), så det matcher under hydrering. Vi bruger
+// det til at slå drag-attributterne til FØRST når siden er hydreret.
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true, // i browseren
+    () => false, // på serveren
+  );
+}
+
 /**
  * Kanban-boardet: én kolonne pr. stage, og kort man kan trække imellem dem.
  *
@@ -21,18 +32,21 @@ import { StageColumn } from "./StageColumn";
  * ruller vi tilbage og viser en fejl.
  */
 export function KanbanBoard({ leads }: { leads: Lead[] }) {
-  // Lokal kopi af leads, så vi kan flytte kort med det samme.
+  // Lokal kopi af leads, så vi kan flytte kort med det samme (optimistisk).
   const [items, setItems] = useState<Lead[]>(leads);
   const [, startTransition] = useTransition();
 
-  // `mounted` bliver true efter første render i browseren. Vi bruger det til at
-  // slå drag-attributterne til, så server- og klient-render matcher (ingen
-  // hydration-fejl). Indtil da kan man stadig flytte via "⋯"-menuen.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // Synkronisér med friske server-data UNDER render (React's anbefalede måde at
+  // justere state på, når en prop ændrer sig — uden en useEffect). Når serveren
+  // sender en ny `leads`-liste (efter revalidate), nulstiller vi den lokale kopi.
+  const [forrigeLeads, setForrigeLeads] = useState<Lead[]>(leads);
+  if (forrigeLeads !== leads) {
+    setForrigeLeads(leads);
+    setItems(leads);
+  }
 
-  // Når serveren sender friske data (efter revalidate), synkroniser.
-  useEffect(() => setItems(leads), [leads]);
+  // Drag slås først til når siden er hydreret (matcher server-render).
+  const dndEnabled = useHydrated();
 
   // Kræv at man trækker mindst 6px, før en drag starter — så almindelige
   // klik (fx på menu-knappen) ikke ved et uheld bliver til en drag.
@@ -74,7 +88,7 @@ export function KanbanBoard({ leads }: { leads: Lead[] }) {
             key={stage}
             stage={stage}
             leads={items.filter((l) => l.stage === stage)}
-            dndEnabled={mounted}
+            dndEnabled={dndEnabled}
           />
         ))}
       </div>
