@@ -1,10 +1,11 @@
 import "server-only";
-import { Lead, LeadInput } from "../types";
+import { Lead, LeadInput, Stage } from "../types";
 import { createServerClient, hasSupabase } from "../supabase/server";
 import {
   localCreateLead,
   localDeleteLead,
   localGetLeads,
+  localSetStage,
   localUpdateLead,
 } from "./local-store";
 
@@ -63,6 +64,18 @@ export async function updateLead(
 
   if (error) throw new Error(error.message);
   return data as Lead;
+}
+
+// Ændrer KUN stage på et lead (bruges af kanban-boardets drag-drop).
+export async function setLeadStage(id: string, stage: Stage): Promise<void> {
+  if (!hasSupabase()) return localSetStage(id, stage);
+
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("leads")
+    .update({ stage })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function deleteLead(id: string): Promise<void> {

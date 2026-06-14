@@ -1,7 +1,7 @@
 import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
-import { Lead, LeadInput } from "../types";
+import { Lead, LeadInput, Stage } from "../types";
 import { SEED_LEADS } from "./seed";
 
 /**
@@ -91,6 +91,18 @@ export async function localUpdateLead(
   leads[idx] = updated;
   await writeAll(leads);
   return updated;
+}
+
+export async function localSetStage(id: string, stage: Stage): Promise<void> {
+  const leads = await readAll();
+  const idx = leads.findIndex((l) => l.id === id);
+  if (idx === -1) throw new Error("Lead ikke fundet");
+  leads[idx] = {
+    ...leads[idx],
+    stage,
+    updated_at: new Date().toISOString(),
+  };
+  await writeAll(leads);
 }
 
 export async function localDeleteLead(id: string): Promise<void> {
